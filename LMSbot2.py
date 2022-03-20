@@ -123,6 +123,8 @@ def main():
     s, target_date, target_times = init()
     go_date = target_date - dt.timedelta(days=7)
     
+    outcome_dict = {target_time : "Did not attempt booking." for target_time in target_times}
+    
     print(f"INIT> Will try to book the following time slots on {target_date}:\n")
     for t in target_times:
         print(f"     - {t}")
@@ -137,29 +139,34 @@ def main():
         if date >= go_date: # or 1:   ## remove or 1
         
             for target_time in target_times:
-                time_to_slot = abs(dt.datetime.combine(date, target_time) - dt.datetime.combine(date, time))
+                time_to_slot = -(dt.datetime.combine(date, target_time) - dt.datetime.combine(date, time))
                 
                 if time_to_slot < dt.timedelta(seconds=30):# or 1:  ## remove or 1
                     slot_url = handle_calendar(s, target_date, target_time)
                     
                     if type(slot_url) == list:
                         if "own" in slot_url:
-                            print("FAIL> Cannot book, slot already owned.")
+                            print("FAIL> Cannot book, slot already owned by user.")
                             target_times.remove(target_time)
+                            outcome_dict[target_time] = "Not booked, already owned by user."
                         elif "unbookable" in slot_url:
                             print("FAIL> Cannot book, slot marked as unbookable.")
                             target_times.remove(target_time)
+                            outcome_dict[target_time] = "Not booked, unbookable."
                         elif "future" in slot_url:
                             print("FAIL> Cannot book, slot not available yet.")
                         elif "past" in slot_url:
                             print("FAIL> Cannot book, slot has passed.")
                             target_times.remove(target_time)
+                            outcome_dict[target_time] = "Not booked, slot has passed."
                         elif "booked" in slot_url:
                             print("FAIL> Cannot book, slot has been booked by someone else.")
                             target_times.remove(target_time)
+                            outcome_dict[target_time] = "Not booked, already taken."
                         else:   
                             print(f"FAIL> Cannot book, slot marked as: {slot_url}")
                             target_times.remove(target_time)
+                            outcome_dict[target_time] = f"Not booked, {slot_url}."
                     
                     else:
                         final_response = handle_booking(s, slot_url)
@@ -167,12 +174,19 @@ def main():
                         if "Room slot successfully booked." in final_response.text:
                             print(f"BOOK> Booked slot at {target_time} on {target_date}!")
                             target_times.remove(target_time)
+                            outcome_dict[target_time] = "Successfully Booked."
+                            print(f"INFO> Waiting until {min(target_times)} to book the next slot.")
                     
                     
             if len(target_times) == 0:
+                print(f"DONE> Booking summary for slots on {target_date}:\n")
+                for time in outcome_dict:
+                    print(f"     - Slot at {time}: {outcome_dict[time]}")
+                    
                 return
                     
         
     
 if __name__ == "__main__":
     main()
+    print("\n>>>>> Booking complete <<<<<")
