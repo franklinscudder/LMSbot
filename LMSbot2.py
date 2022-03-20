@@ -49,9 +49,10 @@ def start():
     
     You can make a file 'creds.py' defining strings USERNAME and PASSWORD in the
     script directory to avoid having to enter these each time (this is not secure
-    but helpful if you use this tool a lot).
+    but helpful if you use this tool a lot). There is a template for this file in 
+    the GitHub repo.
     
-    Good luck and happy jamming...  
+    Good luck and happy sniping...  
     
     """
 
