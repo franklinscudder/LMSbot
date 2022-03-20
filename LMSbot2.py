@@ -3,7 +3,7 @@
 
 A script to automatically book Imperial LMS practise room slots.
 
-Version 2.0
+Version 2.1
 
 Written for Python >= 3.8
 
@@ -13,6 +13,8 @@ www.github.com/franklinscudder
 Released under MIT Software License.
 
 """
+
+
 
 import requests as r
 import datetime as dt
@@ -45,6 +47,10 @@ def start():
     Enter the date and start times you want as specified, the bot will wait until 
     exactly one week before the slot times and then spam the booking link. 
     
+    You can make a file 'creds.py' defining strings USERNAME and PASSWORD in the
+    script directory to avoid having to enter these each time (this is not secure
+    but helpful if you use this tool a lot).
+    
     Good luck and happy jamming...  
     
     """
@@ -62,9 +68,17 @@ def init():
     
     target_times = [dt.datetime.strptime(t.strip(), "%H").time() for t in raw_times]
     
-    lms_user = input("      Enter LMS username: ")
-    lms_pass = input("      Enter LMS password: ")
-    print()
+    try:
+        from creds import USERNAME, PASSWORD
+        print("\nINIT> Credentials imported successfully.")
+    except ImportError:
+        print("\n      No creds.py file found:")
+        USERNAME, PASSWORD = False, False
+        print()
+    
+    lms_user = USERNAME if USERNAME else input("      Enter LMS username: ")
+    lms_pass = PASSWORD if PASSWORD else input("      Enter LMS password: ")
+    
     
     s = r.Session()
     res = s.post("https://www.union.ic.ac.uk/arts/jazzrock/user", data={"name":lms_user, "pass":lms_pass, "form_build_id":"form-Quz0idTacAYGlTH-BEUH5zHoCiqqVmfnuhcnR32LtdM", "form_id":"user_login", "op":"Log in"})
@@ -121,7 +135,7 @@ def handle_booking(s, slot_url):
 def main():
     start()
     s, target_date, target_times = init()
-    go_date = target_date - dt.timedelta(days=7)
+    go_date = target_date - dt.timedelta(weeks=1)
     
     outcome_dict = {target_time : "Did not attempt booking." for target_time in target_times}
     
@@ -136,12 +150,12 @@ def main():
         date_time = dt.datetime.now()
         date, time = date_time.date(), date_time.time()
 
-        if date >= go_date: # or 1:   ## remove or 1
+        if date >= go_date: # or 1: 
         
             for target_time in target_times:
-                time_to_slot = -(dt.datetime.combine(date, target_time) - dt.datetime.combine(date, time))
+                time_to_slot = dt.datetime.combine(go_date, target_time) - date_time
                 
-                if time_to_slot < dt.timedelta(seconds=30):# or 1:  ## remove or 1
+                if time_to_slot < dt.timedelta(seconds=30) :# or 1:  
                     slot_url = handle_calendar(s, target_date, target_time)
                     
                     if type(slot_url) == list:
